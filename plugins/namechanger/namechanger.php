@@ -26,7 +26,7 @@ function name_changer_filter($content) {
 		{
 			if($content_arr[$i] === $names[$j])
 			{
-				$full_name = $content_arr[$i-1] . ' ' . $content_arr[$i] . ' ' . $content_arr[$i+1];
+				$full_name = trim($content_arr[$i-1] . ' ' . $content_arr[$i] . ' ' . $content_arr[$i+1], "\x00..\x40");
 				if(!array_key_exists($full_name, $people_arr))
 				{
 					$people_arr[$full_name] = $counter;
