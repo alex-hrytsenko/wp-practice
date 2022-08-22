@@ -12,19 +12,18 @@ if(!function_exists('add_filter'))
 define('NAMECHANGER_DIR', plugin_dir_path(__FILE__));
 
 function name_changer_filter($content) {
-	static $names = [];
 	$content_arr = explode(' ', $content);
 	$people_arr = [];
 	$counter = 1;
+	global $wpdb;
 
-	if(empty($names)) {
-		$names = explode(',', file_get_contents(NAMECHANGER_DIR . 'list_of_names.txt'));
-	}
+    $results = $wpdb->get_results("SELECT * FROM `" . $wpdb->prefix . "people_names" . "`");
+
 	for($i = 0; $i < count($content_arr); $i++)
 	{
-		for($j = 0; $j < count($names); $j++)
+		for($j = 0; $j < count($results); $j++)
 		{
-			if($content_arr[$i] === $names[$j])
+			if($content_arr[$i] === $results[$j]->name)
 			{
 				$full_name = trim($content_arr[$i-1] . ' ' . $content_arr[$i] . ' ' . $content_arr[$i+1], "\x00..\x40");
 				if(!array_key_exists($full_name, $people_arr))
@@ -62,6 +61,7 @@ class NamesPage {
         add_action('admin_menu', [$this, 'NC_add_page']);
         register_activation_hook( __FILE__, [$this, 'NC_create_table_with_names'] );
         register_deactivation_hook( __FILE__, [$this, 'NC_drop_table_with_names'] );
+
     }
 
     function NC_drop_table_with_names()
@@ -103,25 +103,35 @@ class NamesPage {
     function NC_display_page()
     {
     	global $wpdb;
-    	$table_name = $wpdb->prefix . "people_names";
+		$table_name = $wpdb->prefix . "people_names";
+
+    	if(!empty($_POST['p_name']) && $_POST['p_name']) {
+    		if(!$wpdb->insert($table_name, ['name' => $_POST['p_name']])) 
+    			echo '<div class="notice notice-error is-dismissible"><p>Трапилася помилка, ім’я <strong>' . $_POST['p_name'] . '</strong> вже уснує!</p></div>';
+    		else
+    			echo '<div class="notice notice-success is-dismissible"><p>Ім’я <strong>' . $_POST['p_name'] . '</strong> успішно додано!</p></div>';
+    	}
+    	if(!empty($_POST['delete_name']) && $_POST['delete_name']) {
+    		$wpdb->delete($table_name, ['name' => $_POST['delete_name']]);
+    		echo '<div class="notice notice-error is-dismissible"><p>Ім’я <strong>' . $_POST['delete_name'] . '</strong> успішно видалено!</p></div>';
+    	}
+    	
     	$results = $wpdb->get_results("SELECT * FROM `" . $table_name . "`");
-    	//print_r($results[0]->name);
-
     	$page_title = get_admin_page_title();
-
+    	$post_url = esc_url( admin_url('admin-post.php') );
     	echo <<<_END
     		<div class = "wrapper">
     		<h1>$page_title</h1>
-    			<form method = "GET" action = "">
+    			<form method = "POST" action = "">
     			<input type = "text" name = "p_name">
-    			<input type = "submit" value = "Додати ім’я">
+    			<input type = "submit" style = "cursor: pointer" value = "Додати ім’я">
     			</form>
     		</div>
     _END;
     	// display names
     	echo '<ol>';
     	foreach($results as $result) {
-    		echo '<li><b>' . $result->name . '</b></li>';
+    		echo '<li><b>' . $result->name . '</b><form method = "POST"><input type = "hidden" name = "delete_name" value = "' . $result->name . '"><input style = "cursor: pointer" type = "submit" value = "Видалити"></form></li>';
     	}
     	echo '</ol>';
 	}
