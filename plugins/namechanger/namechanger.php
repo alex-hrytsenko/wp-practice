@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin name: Name Changer
-Description: Приховування конфіденційних даних в вироку
+Description: Приховування конфіденційних даних в справі
 Version: 1.0
 Author: Oleksandr Hrytsenko
 */
@@ -116,25 +116,33 @@ class NamesPage {
     		echo '<div class="notice notice-error is-dismissible"><p>Ім’я <strong>' . $_POST['delete_name'] . '</strong> успішно видалено!</p></div>';
     	}
     	
-    	$results = $wpdb->get_results("SELECT * FROM `" . $table_name . "`");
+    	$results = $wpdb->get_results("SELECT * FROM `" . $table_name . "` ORDER BY `name`");
     	$page_title = get_admin_page_title();
     	$post_url = esc_url( admin_url('admin-post.php') );
-    	echo <<<_END
-    		<div class = "wrapper">
-    		<h1>$page_title</h1>
-    			<form method = "POST" action = "">
-    			<input type = "text" name = "p_name">
-    			<input type = "submit" style = "cursor: pointer" value = "Додати ім’я">
-    			</form>
-    		</div>
-    _END;
-    	// display names
-    	echo '<ol>';
-    	foreach($results as $result) {
-    		echo '<li><b>' . $result->name . '</b><form method = "POST"><input type = "hidden" name = "delete_name" value = "' . $result->name . '"><input style = "cursor: pointer" type = "submit" value = "Видалити"></form></li>';
-    	}
-    	echo '</ol>';
+    	$ppl_i = 1;
+?>
+    	<div class = "wrapper">
+    		<h1><?=$page_title?></h1>
+    		<form method = "POST" action = "">
+    			<input type = "text" name = "p_name" required>
+    			<input type = "submit" style = "cursor: pointer; color: green;" value = "Додати ім’я">
+    		</form>
+	    	<form method = "POST">
+	    		<table style = "border-spacing: 10px;">
+	    			<?php
+		    		foreach($results as $result) {
+			    		echo "<tr>
+				    			<td><b>" . $ppl_i++ . ". " . $result->name . "</b></td>
+				    			<td><button style = 'cursor: pointer; color: red;' type = 'submit' name = 'delete_name' value = '" . $result->name . "'>Видалити</button></td>
+			    			</tr>";
+			    		}
+	    			?>
+	    		</table>
+	    	</form>
+    	</div>
+<?php
 	}
 }
 
 new NamesPage();
+?>
